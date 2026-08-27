@@ -1,1 +1,7 @@
--r backend/requirements.txt
+flask
+flask-cors
+pandas
+numpy
+openpyxl
+xlrd
+reportlab
