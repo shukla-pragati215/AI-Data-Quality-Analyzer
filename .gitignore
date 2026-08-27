@@ -1,0 +1,14 @@
+# Python-generated files
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Local uploads and generated exports
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Local archives and editor state
+backend.zip
+.vscode/*.log

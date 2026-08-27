@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-powered data quality analyzer: upload CSV/Excel datasets, detect issues, get AI recommendations, and clean your data automatically.">
+    <title>AI Data Quality Analyzer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔬</text></svg>">
+</head>
+<body>
+    <!-- SVG Gradients for Gauge -->
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <linearGradient id="gradientSuccess" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#11998e"/>
+                <stop offset="100%" style="stop-color:#38ef7d"/>
+            </linearGradient>
+            <linearGradient id="gradientPrimary" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#667eea"/>
+                <stop offset="100%" style="stop-color:#764ba2"/>
+            </linearGradient>
+            <linearGradient id="gradientWarning" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#f2994a"/>
+                <stop offset="100%" style="stop-color:#f2c94c"/>
+            </linearGradient>
+            <linearGradient id="gradientDanger" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#ff416c"/>
+                <stop offset="100%" style="stop-color:#ff4b2b"/>
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div id="loading-text" class="loading-text">Analyzing your data...</div>
+        <div id="loading-subtext" class="loading-subtext">This may take a moment for large datasets</div>
+    </div>
+
+    <!-- Error Toast -->
+    <div id="error-toast" class="error-toast">
+        <span class="toast-icon">⚠️</span>
+        <span id="error-message">An error occurred</span>
+        <button class="toast-close" onclick="hideError()">✕</button>
+    </div>
+
+    <!-- Success Toast -->
+    <div id="success-toast" class="success-toast">
+        <span class="toast-icon">✅</span>
+        <span id="success-message">Operation completed</span>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="app-logo">
+                <div class="app-logo-icon">🔬</div>
+                <div>
+                    <h1>Data Quality Analyzer</h1>
+                    <span>AI-Powered Dataset Profiling & Cleaning</span>
+                </div>
+            </div>
+            <div id="header-actions" class="header-actions hidden">
+                <div id="header-file-info" class="header-file-info">
+                    <span class="file-icon">📄</span>
+                    <span id="header-filename">dataset.csv</span>
+                </div>
+                <button id="btn-new-upload" class="btn-new-upload" onclick="resetApp()">
+                    <span>↻</span> New Upload
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav id="nav-tabs" class="nav-tabs hidden">
+            <button class="nav-tab active" data-tab="overview" id="nav-overview">
+                <span class="tab-icon">📊</span>
+                <span class="tab-text">Overview</span>
+            </button>
+            <button class="nav-tab" data-tab="columns" id="nav-columns">
+                <span class="tab-icon">📋</span>
+                <span class="tab-text">Columns</span>
+            </button>
+            <button class="nav-tab" data-tab="issues" id="nav-issues">
+                <span class="tab-icon">🔍</span>
+                <span class="tab-text">Issues</span>
+                <span id="issues-badge" class="tab-badge hidden">0</span>
+            </button>
+            <button class="nav-tab" data-tab="recommendations" id="nav-recommendations">
+                <span class="tab-icon">🤖</span>
+                <span class="tab-text">AI Insights</span>
+            </button>
+            <button class="nav-tab" data-tab="cleaning" id="nav-cleaning">
+                <span class="tab-icon">🧹</span>
+                <span class="tab-text">Clean</span>
+            </button>
+            <button class="nav-tab" data-tab="export" id="nav-export">
+                <span class="tab-icon">📥</span>
+                <span class="tab-text">Export</span>
+            </button>
+        </nav>
+
+        <!-- ═══ UPLOAD SECTION ═══ -->
+        <section id="section-upload" class="tab-panel active">
+            <div class="upload-container">
+                <div class="upload-hero">
+                    <h2>Analyze Your Data Quality</h2>
+                    <p>Upload your dataset to get AI-powered insights, quality scoring, and automated cleaning recommendations</p>
+                </div>
+                <div id="upload-zone" class="upload-zone">
+                    <span class="upload-icon">☁️</span>
+                    <h3>Drop your file here</h3>
+                    <p>or click to browse</p>
+                    <span class="browse-btn">Choose File</span>
+                    <div class="upload-formats">
+                        <span class="format-badge">.csv</span>
+                        <span class="format-badge">.xlsx</span>
+                        <span class="format-badge">.xls</span>
+                        <span class="format-badge">max 50MB</span>
+                    </div>
+                </div>
+                <input type="file" id="file-input" accept=".csv,.xlsx,.xls">
+            </div>
+        </section>
+
+        <!-- ═══ OVERVIEW SECTION ═══ -->
+        <section id="section-overview" class="tab-panel">
+            <!-- Quality Score -->
+            <div class="glass-card" style="margin-bottom: var(--space-xl);">
+                <div class="quality-score-container">
+                    <div class="score-gauge">
+                        <svg viewBox="0 0 120 120">
+                            <circle class="gauge-bg" cx="60" cy="60" r="52"/>
+                            <circle id="gauge-fill" class="gauge-fill excellent" cx="60" cy="60" r="52"
+                                stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+                        </svg>
+                        <div class="score-value">
+                            <div id="score-number" class="number">—</div>
+                            <div class="label">Quality Score</div>
+                        </div>
+                    </div>
+                    <div id="score-categories" class="score-categories"></div>
+                </div>
+            </div>
+
+            <!-- Stats grid -->
+            <div id="stats-grid" class="overview-grid"></div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-container glass-card">
+                    <div class="card-header">
+                        <span class="card-title"><span class="icon">📉</span> Missing Values by Column</span>
+                    </div>
+                    <canvas id="chart-missing"></canvas>
+                </div>
+                <div class="chart-container glass-card">
+                    <div class="card-header">
+                        <span class="card-title"><span class="icon">📊</span> Quality Score Breakdown</span>
+                    </div>
+                    <canvas id="chart-scores"></canvas>
+                </div>
+                <div class="chart-container glass-card">
+                    <div class="card-header">
+                        <span class="card-title"><span class="icon">📈</span> Issues by Category</span>
+                    </div>
+                    <canvas id="chart-issues"></canvas>
+                </div>
+                <div class="chart-container glass-card">
+                    <div class="card-header">
+                        <span class="card-title"><span class="icon">🔢</span> Data Types Distribution</span>
+                    </div>
+                    <canvas id="chart-dtypes"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ COLUMNS SECTION ═══ -->
+        <section id="section-columns" class="tab-panel">
+            <div class="glass-card">
+                <div class="card-header">
+                    <span class="card-title"><span class="icon">📋</span> Column-Level Analysis</span>
+                </div>
+                <div class="data-table-wrapper">
+                    <table class="data-table" id="columns-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Column Name</th>
+                                <th>Data Type</th>
+                                <th>Semantic Type</th>
+                                <th>Missing %</th>
+                                <th>Unique</th>
+                                <th>Outliers</th>
+                                <th>Issues</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="columns-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ ISSUES SECTION ═══ -->
+        <section id="section-issues" class="tab-panel">
+            <div id="issues-summary" class="issues-summary"></div>
+            <div id="issues-filter" class="issues-filter"></div>
+            <div id="issues-list"></div>
+        </section>
+
+        <!-- ═══ RECOMMENDATIONS SECTION ═══ -->
+        <section id="section-recommendations" class="tab-panel">
+            <div class="glass-card" style="margin-bottom: var(--space-xl);">
+                <div class="card-header">
+                    <span class="card-title"><span class="icon">🤖</span> AI-Powered Recommendations</span>
+                    <span id="rec-count" class="badge badge-primary">0 insights</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.88rem;">
+                    Each recommendation is generated from the specific issues detected in your dataset. Click to expand for detailed analysis and suggested fixes.
+                </p>
+            </div>
+            <div id="recommendations-list"></div>
+        </section>
+
+        <!-- ═══ CLEANING SECTION ═══ -->
+        <section id="section-cleaning" class="tab-panel">
+            <div class="glass-card" style="margin-bottom: var(--space-xl);">
+                <div class="card-header">
+                    <span class="card-title"><span class="icon">🧹</span> Data Cleaning Operations</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: var(--space-md);">
+                    Select the cleaning operations you want to apply. Your original dataset is never modified — all operations are applied to a copy.
+                </p>
+            </div>
+
+            <div id="cleaning-options" class="cleaning-grid"></div>
+
+            <div class="cleaning-actions">
+                <div>
+                    <button id="btn-apply-cleaning" class="btn btn-primary btn-lg" onclick="applyCleaning()" disabled>
+                        🧹 Apply Selected Operations
+                    </button>
+                    <button id="btn-select-all-cleaning" class="btn btn-outline btn-sm" onclick="toggleAllCleaning()" style="margin-left: var(--space-md);">
+                        Select All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Before/After comparison -->
+            <div id="cleaning-results" class="hidden">
+                <h3 style="color: var(--text-primary); margin-bottom: var(--space-lg); font-size: 1.2rem;">
+                    ✨ Cleaning Results
+                </h3>
+
+                <div class="comparison-container">
+                    <div class="comparison-card before">
+                        <h4>🔴 Before Cleaning</h4>
+                        <div id="before-score" class="comparison-score">—</div>
+                        <div id="before-details"></div>
+                    </div>
+                    <div class="comparison-card after">
+                        <h4>🟢 After Cleaning</h4>
+                        <div id="after-score" class="comparison-score improved">—</div>
+                        <div id="after-details"></div>
+                    </div>
+                </div>
+
+                <div id="ops-log" class="ops-log" style="margin-top: var(--space-xl);"></div>
+
+                <!-- Data Preview -->
+                <div style="margin-top: var(--space-xl);">
+                    <h3 style="color: var(--text-primary); margin-bottom: var(--space-lg);">📋 Cleaned Data Preview</h3>
+                    <div id="cleaned-preview-table" class="preview-table-wrapper"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ EXPORT SECTION ═══ -->
+        <section id="section-export" class="tab-panel">
+            <div class="export-grid">
+                <div class="export-card glass-card">
+                    <span class="export-icon">📄</span>
+                    <h4>Download CSV</h4>
+                    <p>Export the cleaned dataset as a comma-separated values file</p>
+                    <button id="btn-download-csv" class="btn btn-primary" onclick="downloadFile('csv')" disabled>
+                        📥 Download CSV
+                    </button>
+                </div>
+                <div class="export-card glass-card">
+                    <span class="export-icon">📊</span>
+                    <h4>Download Excel</h4>
+                    <p>Export the cleaned dataset as an Excel spreadsheet (.xlsx)</p>
+                    <button id="btn-download-xlsx" class="btn btn-primary" onclick="downloadFile('xlsx')" disabled>
+                        📥 Download Excel
+                    </button>
+                </div>
+                <div class="export-card glass-card">
+                    <span class="export-icon">📑</span>
+                    <h4>Quality Report</h4>
+                    <p>Download the full data quality analysis report as a PDF document</p>
+                    <button id="btn-download-report" class="btn btn-success" onclick="downloadReport()" disabled>
+                        📥 Download Report
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
