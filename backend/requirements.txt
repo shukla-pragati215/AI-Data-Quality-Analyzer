@@ -2,7 +2,6 @@ flask
 flask-cors
 pandas
 numpy
-scipy
 openpyxl
 xlrd
 reportlab

@@ -5,7 +5,6 @@ Performs comprehensive data profiling and quality scoring.
 
 import pandas as pd
 import numpy as np
-from scipy import stats
 import re
 from datetime import datetime
 
@@ -347,7 +346,12 @@ class DataQualityAnalyzer:
             iqr_outliers = series[(series < lower_bound) | (series > upper_bound)]
 
             # Z-score method
-            z_scores = np.abs(stats.zscore(series, nan_policy='omit'))
+            mean = series.mean()
+            standard_deviation = series.std()
+            if standard_deviation == 0 or pd.isna(standard_deviation):
+                z_scores = np.zeros(len(series))
+            else:
+                z_scores = np.abs((series.to_numpy() - mean) / standard_deviation)
             z_outliers = series[z_scores > 3]
 
             outlier_count = len(iqr_outliers)

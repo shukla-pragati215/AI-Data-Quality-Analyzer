@@ -5,7 +5,6 @@ Applies cleaning operations without modifying the original dataset.
 
 import pandas as pd
 import numpy as np
-from scipy import stats
 
 
 class DataCleaner:
