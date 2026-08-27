@@ -11,11 +11,6 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 
-from analyzer import DataQualityAnalyzer
-from cleaner import DataCleaner
-from recommender import AIRecommender
-from report_generator import ReportGenerator
-
 app = Flask(__name__, static_folder=None)
 CORS(app)
 
@@ -156,6 +151,9 @@ def upload_file():
 def run_analysis(session_id):
     """Run full data quality analysis."""
     try:
+        from analyzer import DataQualityAnalyzer
+        from recommender import AIRecommender
+
         session = sessions.get(session_id)
         if not session:
             return jsonify({'error': 'Session not found. Please re-upload your file.'}), 404
@@ -192,6 +190,9 @@ def run_analysis(session_id):
 def clean_dataset(session_id):
     """Apply cleaning operations to the dataset."""
     try:
+        from analyzer import DataQualityAnalyzer
+        from cleaner import DataCleaner
+
         session = sessions.get(session_id)
         if not session:
             return jsonify({'error': 'Session not found. Please re-upload your file.'}), 404
@@ -312,6 +313,8 @@ def download_file(session_id, file_type):
 def download_report(session_id):
     """Generate and download PDF analysis report."""
     try:
+        from report_generator import ReportGenerator
+
         session = sessions.get(session_id)
         if not session:
             return jsonify({'error': 'Session not found'}), 404
