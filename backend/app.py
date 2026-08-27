@@ -20,7 +20,13 @@ app = Flask(__name__, static_folder=None)
 CORS(app)
 
 # Configuration
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+# Vercel functions can only write to /tmp; local development keeps using uploads/.
+UPLOAD_FOLDER = os.environ.get(
+    'UPLOAD_FOLDER',
+    '/tmp/ai-data-quality-analyzer' if os.environ.get('VERCEL') else os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'uploads'
+    ),
+)
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
